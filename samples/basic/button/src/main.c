@@ -33,6 +33,8 @@ void main(void)
 {
 	struct device *dev_button;
 	int ret;
+        int time = 0;
+        bool ledsClear = false;  
 
 	dev_button = device_get_binding(DT_ALIAS_SW0_GPIOS_CONTROLLER);
 	if (dev_button == NULL) {
@@ -73,6 +75,12 @@ void main(void)
 
 	ret = gpio_pin_configure(dev_led, DT_ALIAS_LED0_GPIOS_PIN,
 				 DT_ALIAS_LED0_GPIOS_FLAGS | GPIO_OUTPUT);
+	ret = gpio_pin_configure(dev_led, DT_ALIAS_LED1_GPIOS_PIN,
+				 DT_ALIAS_LED1_GPIOS_FLAGS | GPIO_OUTPUT);
+	ret = gpio_pin_configure(dev_led, DT_ALIAS_LED2_GPIOS_PIN,
+				 DT_ALIAS_LED2_GPIOS_FLAGS | GPIO_OUTPUT);
+	ret = gpio_pin_configure(dev_led, DT_ALIAS_LED3_GPIOS_PIN,
+				 DT_ALIAS_LED3_GPIOS_FLAGS | GPIO_OUTPUT);
 	if (ret != 0) {
 		printk("Error %d: failed to configure pin %d '%s'\n",
 			ret, DT_ALIAS_LED0_GPIOS_PIN, DT_ALIAS_LED0_LABEL);
@@ -81,12 +89,56 @@ void main(void)
 #endif
 	printk("Press %s on the board\n", DT_ALIAS_SW0_LABEL);
 
+	gpio_pin_set(dev_led, DT_ALIAS_LED0_GPIOS_PIN, false);
+	gpio_pin_set(dev_led, DT_ALIAS_LED1_GPIOS_PIN, false);
+	gpio_pin_set(dev_led, DT_ALIAS_LED2_GPIOS_PIN, false);
+	gpio_pin_set(dev_led, DT_ALIAS_LED3_GPIOS_PIN, false);
+
 	while (1) {
 #ifdef DT_ALIAS_LED0_GPIOS_CONTROLLER
 		bool val;
 
 		val = gpio_pin_get(dev_button, DT_ALIAS_SW0_GPIOS_PIN);
-		gpio_pin_set(dev_led, DT_ALIAS_LED0_GPIOS_PIN, val);
+                if (val)
+                {
+                    ++time;
+                    if (!ledsClear)
+                    {
+	   	    	gpio_pin_set(dev_led, DT_ALIAS_LED0_GPIOS_PIN, false);
+		    	gpio_pin_set(dev_led, DT_ALIAS_LED1_GPIOS_PIN, false);
+		    	gpio_pin_set(dev_led, DT_ALIAS_LED2_GPIOS_PIN, false);
+		    	gpio_pin_set(dev_led, DT_ALIAS_LED3_GPIOS_PIN, false);
+                        ledsClear = true;
+                    }
+                }
+                else
+                {
+                    if (time > 0)
+                    {
+                        time /= 1000; 
+
+                        if (time & 1)
+                        {
+	        	    gpio_pin_set(dev_led, DT_ALIAS_LED0_GPIOS_PIN, true);
+                        }
+                    	if (time & 2)
+                    	{
+	    	            gpio_pin_set(dev_led, DT_ALIAS_LED1_GPIOS_PIN, true);
+                    	}
+                    	if (time & 4)
+                    	{
+	    	            gpio_pin_set(dev_led, DT_ALIAS_LED2_GPIOS_PIN, true);
+                    	}
+                    	if (time & 8)
+                    	{
+	    	       	    gpio_pin_set(dev_led, DT_ALIAS_LED3_GPIOS_PIN, true);
+                    	}
+
+                    }
+                    time = 0;
+                    ledsClear = false;
+                }
+
 		k_sleep(SLEEP_TIME_MS);
 #endif
 	}
