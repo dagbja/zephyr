@@ -121,10 +121,10 @@ static u32_t skip_hcto;
 static u8_t *rx_pkt_ptr;
 static u32_t payload_max_size;
 
-static u8_t MALIGN(4) _pkt_empty[PDU_EM_SIZE_MAX];
+static u8_t MALIGN(4) _pkt_empty[PDU_EM_LL_SIZE_MAX];
 static u8_t MALIGN(4) _pkt_scratch[
-			((RADIO_PDU_LEN_MAX + 3) > PDU_AC_SIZE_MAX) ?
-			(RADIO_PDU_LEN_MAX + 3) : PDU_AC_SIZE_MAX];
+			((RADIO_PDU_LEN_MAX + 3) > PDU_AC_LL_SIZE_MAX) ?
+			(RADIO_PDU_LEN_MAX + 3) : PDU_AC_LL_SIZE_MAX];
 
 static s8_t rssi;
 
