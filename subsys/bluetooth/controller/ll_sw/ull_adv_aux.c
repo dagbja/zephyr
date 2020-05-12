@@ -376,7 +376,7 @@ u8_t ll_adv_aux_ad_data_set(u8_t handle, u8_t op, u8_t frag_pref, u8_t len,
 			memcpy(ps, _ps, sizeof(struct ext_adv_adi));
 
 			_adi = (void *)_pp;
-			did = _adi->did;
+			did = sys_le16_to_cpu(_adi->did);
 		} else {
 			ap->sid = adv->sid;
 			as->sid = adv->sid;
@@ -387,8 +387,8 @@ u8_t ll_adv_aux_ad_data_set(u8_t handle, u8_t op, u8_t frag_pref, u8_t len,
 			did++;
 		}
 
-		ap->did = did;
-		as->did = did;
+		ap->did = sys_cpu_to_le16(did);
+		as->did = sys_cpu_to_le16(did);
 	}
 
 	/* No CTEInfo field in primary channel PDU */
