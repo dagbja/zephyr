@@ -38,10 +38,10 @@ u32_t ull_adv_filter_pol_get(u8_t handle);
 struct ll_adv_set *ull_adv_is_created_get(u8_t handle);
 
 /* Helper function to construct AD data */
-u8_t adv_data_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data);
+u8_t ull_adv_data_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data);
 
 /* Helper function to construct SR data */
-u8_t scan_rsp_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data);
+u8_t ull_scan_rsp_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data);
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT)
 /* Helper functions to initialise and reset ull_adv_aux module */
