@@ -433,7 +433,7 @@ u8_t ll_adv_data_set(u8_t len, u8_t const *const data)
 		return BT_HCI_ERR_CMD_DISALLOWED;
 	}
 
-	return adv_data_set(adv, len, data);
+	return ull_adv_data_set(adv, len, data);
 }
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT)
@@ -451,7 +451,7 @@ u8_t ll_adv_scan_rsp_set(u8_t len, u8_t const *const data)
 		return BT_HCI_ERR_CMD_DISALLOWED;
 	}
 
-	return scan_rsp_set(adv, len, data);
+	return ull_scan_rsp_set(adv, len, data);
 }
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT) || defined(CONFIG_BT_HCI_MESH_EXT)
@@ -1247,7 +1247,7 @@ struct ll_adv_set *ull_adv_is_created_get(u8_t handle)
 }
 #endif /* CONFIG_BT_CTLR_ADV_EXT */
 
-u8_t adv_data_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data)
+u8_t ull_adv_data_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data)
 {
 	struct pdu_adv *prev;
 	struct pdu_adv *pdu;
@@ -1286,7 +1286,7 @@ u8_t adv_data_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data)
 	return 0;
 }
 
-u8_t scan_rsp_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data)
+u8_t ull_scan_rsp_set(struct ll_adv_set *adv, u8_t len, u8_t const *const data)
 {
 	struct pdu_adv *prev;
 	struct pdu_adv *pdu;

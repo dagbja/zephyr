@@ -123,7 +123,7 @@ u8_t ll_adv_aux_ad_data_set(u8_t handle, u8_t op, u8_t frag_pref, u8_t len,
 	 */
 	_pri = lll_adv_data_peek(lll);
 	if (_pri->type != PDU_ADV_TYPE_EXT_IND) {
-		return adv_data_set(adv, len, data);
+		return ull_adv_data_set(adv, len, data);
 	}
 
 	/* Allocate or existing Auxiliary channel instance */
@@ -479,7 +479,7 @@ u8_t ll_adv_aux_sr_data_set(u8_t handle, u8_t op, u8_t frag_pref, u8_t len,
 	 */
 	_pri = lll_adv_data_peek(lll);
 	if (_pri->type != PDU_ADV_TYPE_EXT_IND) {
-		return scan_rsp_set(adv, len, data);
+		return ull_scan_rsp_set(adv, len, data);
 	}
 
 	/* FIXME: Workaround to not fail when no data is supplied */
