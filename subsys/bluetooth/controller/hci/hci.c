@@ -3111,10 +3111,29 @@ static void le_ext_adv_legacy_report(struct pdu_data *pdu_data,
 				     struct node_rx_pdu *node_rx,
 				     struct net_buf *buf)
 {
-	const u8_t c_adv_type[] = { 0x13, 0x15, 0x10, 0xff,
-				    0x1a, /* SCAN_RSP to an ADV_SCAN_IND */
-				    0x1b, /* SCAN_RSP to an ADV_IND */
-				    0x12 };
+	/* Lookup event type based on pdu_adv_type set by LLL */
+	const u8_t evt_type_lookup[] = {
+		(BT_HCI_LE_ADV_EVT_TYPE_LEGACY | BT_HCI_LE_ADV_EVT_TYPE_SCAN |
+		 BT_HCI_LE_ADV_EVT_TYPE_CONN),   /* ADV_IND */
+		(BT_HCI_LE_ADV_EVT_TYPE_LEGACY | BT_HCI_LE_ADV_EVT_TYPE_DIRECT |
+		 BT_HCI_LE_ADV_EVT_TYPE_CONN),   /* DIRECT_IND */
+		(BT_HCI_LE_ADV_EVT_TYPE_LEGACY), /* NONCONN_IND */
+		0xff,                            /* Invalid index lookup */
+		(BT_HCI_LE_ADV_EVT_TYPE_LEGACY |
+		 BT_HCI_LE_ADV_EVT_TYPE_SCAN_RSP |
+		 BT_HCI_LE_ADV_EVT_TYPE_SCAN),   /* SCAN_RSP to an ADV_SCAN_IND
+						  */
+		(BT_HCI_LE_ADV_EVT_TYPE_LEGACY |
+		 BT_HCI_LE_ADV_EVT_TYPE_SCAN_RSP |
+		 BT_HCI_LE_ADV_EVT_TYPE_SCAN |
+		 BT_HCI_LE_ADV_EVT_TYPE_CONN), /* SCAN_RSP to an ADV_IND,
+						* NOTE: LLL explicitly sets
+						* adv_type to
+						* PDU_ADV_TYPE_ADV_IND_SCAN_RSP
+						*/
+		(BT_HCI_LE_ADV_EVT_TYPE_LEGACY |
+		 BT_HCI_LE_ADV_EVT_TYPE_SCAN)    /* SCAN_IND */
+	};
 	struct bt_hci_evt_le_ext_advertising_info *adv_info;
 	struct bt_hci_evt_le_ext_advertising_report *sep;
 	struct pdu_adv *adv = (void *)pdu_data;
@@ -3172,7 +3191,7 @@ static void le_ext_adv_legacy_report(struct pdu_data *pdu_data,
 	sep->num_reports = 1U;
 	adv_info = (void *)(((u8_t *)sep) + sizeof(*sep));
 
-	adv_info->evt_type = c_adv_type[adv->type];
+	adv_info->evt_type = evt_type_lookup[adv->type];
 
 #if defined(CONFIG_BT_CTLR_PRIVACY)
 	if (rl_idx < ll_rl_size_get()) {

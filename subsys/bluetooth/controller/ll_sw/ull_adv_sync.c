@@ -219,7 +219,7 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 			/* C1, Tx Power is optional on the LE 1M PHY, and
 			 * reserved for future use on the LE Coded PHY.
 			 */
-			if (adv->lll.phy_p != BIT(2)) {
+			if (adv->lll.phy_p != PHY_CODED) {
 				hp->tx_pwr = 1;
 				pp++;
 			} else {
@@ -421,7 +421,7 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 	/* No SyncInfo */
 
 	/* TODO: TxPower */
-	if (flags & BIT(6)) {
+	if (flags & BT_HCI_LE_ADV_PROP_TX_POWER) {
 		/* TODO: add/remove Tx Power in AUX_SYNC_IND PDU */
 		return BT_HCI_ERR_CMD_DISALLOWED;
 	}
@@ -430,7 +430,7 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 
 	/* TODO: AdvData */
 
-	/* Calc primary PDU len */
+	/* Calc tertiary PDU len */
 	ter_len = pt - (u8_t *)t;
 	if (ter_len >
 	    (offsetof(struct pdu_adv_com_ext_adv, ext_hdr_adi_adv_data) +

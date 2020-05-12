@@ -124,23 +124,32 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 	/* extended adv param set */
 	if (adv_type == PDU_ADV_TYPE_EXT_IND) {
 		/* legacy */
-		if (evt_prop & BIT(4)) {
-			u8_t const leg_adv_type[] = { 0x03, 0x04, 0x02, 0x00};
+		if (evt_prop & BT_HCI_LE_ADV_PROP_LEGACY) {
+			/* lookup evt_prop to PDU type in  pdu_adv_type[] */
+			u8_t const leg_adv_type[] = {
+				0x03, /* PDU_ADV_TYPE_NONCONN_IND */
+				0x04, /* PDU_ADV_TYPE_DIRECT_IND */
+				0x02, /* PDU_ADV_TYPE_SCAN_IND */
+				0x00  /* PDU_ADV_TYPE_ADV_IND */
+			};
 
 			adv_type = leg_adv_type[evt_prop & 0x03];
 
 			/* high duty cycle directed */
-			if (evt_prop & BIT(3)) {
-				adv_type = 0x01;
+			if (evt_prop & BT_HCI_LE_ADV_PROP_HI_DC_CONN) {
+				adv_type = 0x01; /* PDU_ADV_TYPE_DIRECT_IND */
 			}
 
-			adv->lll.phy_p = BIT(0);
+			adv->lll.phy_p = PHY_1M;
 		} else {
 			/* - Connectable and scannable not allowed;
 			 * - High duty cycle directed connectable not allowed
 			 */
-			if (((evt_prop & 0x03) == 0x03) ||
-			    ((evt_prop & 0x0C) == 0x0C)) {
+			if (((evt_prop & (BT_HCI_LE_ADV_PROP_CONN |
+					 BT_HCI_LE_ADV_PROP_SCAN)) ==
+			     (BT_HCI_LE_ADV_PROP_CONN |
+			      BT_HCI_LE_ADV_PROP_SCAN)) ||
+			    (evt_prop & BT_HCI_LE_ADV_PROP_HI_DC_CONN)) {
 				return BT_HCI_ERR_INVALID_PARAM;
 			}
 
@@ -154,7 +163,7 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 		adv->is_created = ULL_ADV_CREATED_BITMASK_CREATED |
 				  ULL_ADV_CREATED_BITMASK_EXTENDED;
 	} else {
-		adv->lll.phy_p = BIT(0);
+		adv->lll.phy_p = PHY_1M;
 
 		/* Mark the adv set as created by legacy advertising cmd */
 		adv->is_created = ULL_ADV_CREATED_BITMASK_CREATED;
@@ -274,7 +283,8 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 		}
 		if (!p->adv_mode &&
 		    (!_h.aux_ptr ||
-		     (!(evt_prop & BIT(5)) && (phy_p != BIT(2))))) {
+		     (!(evt_prop & BT_HCI_LE_ADV_PROP_ANON) &&
+		      (phy_p != PHY_CODED)))) {
 			/* TODO: optional on 1M with Aux Ptr */
 			h->adv_addr = 1;
 
@@ -311,8 +321,8 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 		/* C1, Tx Power is optional on the LE 1M PHY, and reserved for
 		 * for future use on the LE Coded PHY.
 		 */
-		if (evt_prop & BIT(6) &&
-		    (!_h.aux_ptr || (phy_p != BIT(2)))) {
+		if ((evt_prop & BT_HCI_LE_ADV_PROP_TX_POWER) &&
+		    (!_h.aux_ptr || (phy_p != PHY_CODED))) {
 			h->tx_pwr = 1;
 			ptr++;
 		}
@@ -1215,9 +1225,9 @@ u32_t ull_adv_is_enabled(u8_t handle)
 	}
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT)
-	return BIT(0) | ((u32_t)adv->is_created << 1);
+	return ULL_ADV_ENABLED_BITMASK_ENABLED | ((u32_t)adv->is_created << 1);
 #else /* !CONFIG_BT_CTLR_ADV_EXT */
-	return BIT(0);
+	return ULL_ADV_ENABLED_BITMASK_ENABLED;
 #endif /* !CONFIG_BT_CTLR_ADV_EXT */
 }
 
