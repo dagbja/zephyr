@@ -260,7 +260,7 @@ u8_t ll_adv_aux_ad_data_set(u8_t handle, u8_t op, u8_t frag_pref, u8_t len,
 		/* C1, Tx Power is optional on the LE 1M PHY, and reserved for
 		 * for future use on the LE Coded PHY.
 		 */
-		if (lll->phy_p != BIT(2)) {
+		if (lll->phy_p != PHY_CODED) {
 			hp->tx_pwr = 1;
 			pp++;
 		} else {
