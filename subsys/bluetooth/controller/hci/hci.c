@@ -3239,7 +3239,7 @@ static void le_ext_adv_report(struct pdu_data *pdu_data,
 	struct pdu_adv *adv = (void *)pdu_data;
 	struct node_rx_pdu *node_rx_curr;
 	struct node_rx_pdu *node_rx_next;
-	struct ext_adv_adi *adi = NULL;
+	struct pdu_adv_adi *adi = NULL;
 	u8_t direct_addr_type = 0U;
 	u8_t *direct_addr = NULL;
 	u8_t total_data_len = 0U;
@@ -3266,7 +3266,7 @@ static void le_ext_adv_report(struct pdu_data *pdu_data,
 	node_rx_curr = node_rx;
 	node_rx_next = node_rx_curr->hdr.rx_ftr.extra;
 	do {
-		struct ext_adv_adi *adi_curr = NULL;
+		struct pdu_adv_adi *adi_curr = NULL;
 		u8_t direct_addr_type_curr = 0U;
 		struct pdu_adv_com_ext_adv *p;
 		u8_t *direct_addr_curr = NULL;
@@ -3274,7 +3274,7 @@ static void le_ext_adv_report(struct pdu_data *pdu_data,
 		u8_t *adv_addr_curr = NULL;
 		u8_t data_len_curr = 0U;
 		u8_t *data_curr = NULL;
-		struct ext_adv_hdr *h;
+		struct pdu_adv_hdr *h;
 		u8_t sec_phy_curr = 0U;
 		u8_t evt_type_curr;
 		u8_t *ptr;
@@ -3339,7 +3339,7 @@ static void le_ext_adv_report(struct pdu_data *pdu_data,
 		}
 
 		if (h->aux_ptr) {
-			struct ext_adv_aux_ptr *aux;
+			struct pdu_adv_aux_ptr *aux;
 			u8_t aux_phy;
 
 			aux = (void *)ptr;
