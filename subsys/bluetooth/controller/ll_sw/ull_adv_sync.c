@@ -55,7 +55,7 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 	struct lll_adv_sync *lll_sync;
 	struct pdu_adv_com_ext_adv *t;
 	struct ll_adv_sync_set *sync;
-	struct ext_adv_hdr *ht, _ht;
+	struct pdu_adv_hdr *ht, _ht;
 	struct ll_adv_set *adv;
 	struct pdu_adv *pdu;
 	u8_t *_pt, *pt;
@@ -71,8 +71,8 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 		struct pdu_adv_com_ext_adv *p, *_p, *s, *_s;
 		u8_t pri_len, _pri_len, sec_len, _sec_len;
 		struct pdu_adv *_pri, *pri, *_sec, *sec;
-		struct ext_adv_hdr *hp, _hp, *hs, _hs;
-		struct ext_adv_sync_info *si;
+		struct pdu_adv_hdr *hp, _hp, *hs, _hs;
+		struct pdu_adv_sync_info *si;
 		struct lll_adv_aux *lll_aux;
 		u8_t *_pp, *pp, *ps, *_ps;
 		u8_t ip, is, ad_len;
@@ -184,27 +184,27 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 
 		/* ADI flag */
 		if (_hp.adi) {
-			_pp += sizeof(struct ext_adv_adi);
+			_pp += sizeof(struct pdu_adv_adi);
 		}
 		hp->adi = 1;
-		pp += sizeof(struct ext_adv_adi);
+		pp += sizeof(struct pdu_adv_adi);
 		if (_hs.adi) {
-			_ps += sizeof(struct ext_adv_adi);
+			_ps += sizeof(struct pdu_adv_adi);
 		}
 		hs->adi = 1;
-		ps += sizeof(struct ext_adv_adi);
+		ps += sizeof(struct pdu_adv_adi);
 
 		/* AuxPtr flag */
 		if (_hp.aux_ptr) {
-			_pp += sizeof(struct ext_adv_aux_ptr);
+			_pp += sizeof(struct pdu_adv_aux_ptr);
 		}
 		hp->aux_ptr = 1;
-		pp += sizeof(struct ext_adv_aux_ptr);
+		pp += sizeof(struct pdu_adv_aux_ptr);
 		if (_hs.aux_ptr) {
-			_ps += sizeof(struct ext_adv_aux_ptr);
+			_ps += sizeof(struct pdu_adv_aux_ptr);
 
 			hs->aux_ptr = 1;
-			ps += sizeof(struct ext_adv_aux_ptr);
+			ps += sizeof(struct pdu_adv_aux_ptr);
 		}
 
 		/* No SyncInfo flag in primary channel PDU */
@@ -290,12 +290,12 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 
 		/* AuxPtr */
 		if (_hp.aux_ptr) {
-			_pp -= sizeof(struct ext_adv_aux_ptr);
+			_pp -= sizeof(struct pdu_adv_aux_ptr);
 		}
 		{
-			struct ext_adv_aux_ptr *aux;
+			struct pdu_adv_aux_ptr *aux;
 
-			pp -= sizeof(struct ext_adv_aux_ptr);
+			pp -= sizeof(struct pdu_adv_aux_ptr);
 
 			/* NOTE: Aux Offset will be set in advertiser LLL event
 			 */
@@ -310,10 +310,10 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 		 * primary PDU
 		 */
 		if (_hs.aux_ptr) {
-			struct ext_adv_aux_ptr *aux;
+			struct pdu_adv_aux_ptr *aux;
 
-			_ps -= sizeof(struct ext_adv_aux_ptr);
-			ps -= sizeof(struct ext_adv_aux_ptr);
+			_ps -= sizeof(struct pdu_adv_aux_ptr);
+			ps -= sizeof(struct pdu_adv_aux_ptr);
 
 			/* NOTE: Aux Offset will be set in advertiser LLL event
 			 */
@@ -326,25 +326,25 @@ u8_t ll_adv_sync_param_set(u8_t handle, u16_t interval, u16_t flags)
 
 		/* ADI */
 		{
-			struct ext_adv_adi *ap, *as;
+			struct pdu_adv_adi *ap, *as;
 			u16_t did = UINT16_MAX;
 
-			pp -= sizeof(struct ext_adv_adi);
-			ps -= sizeof(struct ext_adv_adi);
+			pp -= sizeof(struct pdu_adv_adi);
+			ps -= sizeof(struct pdu_adv_adi);
 
 			ap = (void *)pp;
 			as = (void *)ps;
 
 			if (_hp.adi) {
-				struct ext_adv_adi *_adi;
+				struct pdu_adv_adi *_adi;
 
-				_pp -= sizeof(struct ext_adv_adi);
-				_ps -= sizeof(struct ext_adv_adi);
+				_pp -= sizeof(struct pdu_adv_adi);
+				_ps -= sizeof(struct pdu_adv_adi);
 
 				/* NOTE: memcpy shall handle overlapping buffers
 				 */
-				memcpy(pp, _pp, sizeof(struct ext_adv_adi));
-				memcpy(ps, _ps, sizeof(struct ext_adv_adi));
+				memcpy(pp, _pp, sizeof(struct pdu_adv_adi));
+				memcpy(ps, _ps, sizeof(struct pdu_adv_adi));
 
 				_adi = (void *)_pp;
 				did = sys_le16_to_cpu(_adi->did);

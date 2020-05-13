@@ -257,7 +257,7 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 #if defined(CONFIG_BT_CTLR_ADV_EXT)
 	} else if (pdu->type == PDU_ADV_TYPE_EXT_IND) {
 		struct pdu_adv_com_ext_adv *p;
-		struct ext_adv_hdr *h, _h;
+		struct pdu_adv_hdr *h, _h;
 		u8_t *_ptr, *ptr;
 		u8_t len;
 
@@ -304,14 +304,14 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 		/* ADI flag */
 		if (_h.adi) {
 			h->adi = 1;
-			ptr += sizeof(struct ext_adv_adi);
+			ptr += sizeof(struct pdu_adv_adi);
 		}
 
 #if (CONFIG_BT_CTLR_ADV_AUX_SET > 0)
 		/* AuxPtr flag */
 		if (_h.aux_ptr) {
 			h->aux_ptr = 1;
-			ptr += sizeof(struct ext_adv_aux_ptr);
+			ptr += sizeof(struct pdu_adv_aux_ptr);
 		}
 #endif /* (CONFIG_BT_CTLR_ADV_AUX_SET > 0) */
 
@@ -368,9 +368,9 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 #if (CONFIG_BT_CTLR_ADV_AUX_SET > 0)
 		/* AuxPtr */
 		if (h->aux_ptr) {
-			struct ext_adv_aux_ptr *aux;
+			struct pdu_adv_aux_ptr *aux;
 
-			ptr -= sizeof(struct ext_adv_aux_ptr);
+			ptr -= sizeof(struct pdu_adv_aux_ptr);
 
 			/* NOTE: Channel Index, CA, Offset Units and AUX Offset
 			 * will be set in Advertiser Event.
@@ -386,12 +386,12 @@ u8_t ll_adv_params_set(u16_t interval, u8_t adv_type,
 
 		/* ADI */
 		if (h->adi) {
-			struct ext_adv_adi *adi;
+			struct pdu_adv_adi *adi;
 
-			ptr -= sizeof(struct ext_adv_adi);
+			ptr -= sizeof(struct pdu_adv_adi);
 
 			/* NOTE: memcpy shall handle overlapping buffers */
-			memcpy(ptr, _ptr, sizeof(struct ext_adv_adi));
+			memcpy(ptr, _ptr, sizeof(struct pdu_adv_adi));
 
 			adi = (void *)ptr;
 			adi->sid = sid;
@@ -518,7 +518,7 @@ u8_t ll_adv_enable(u8_t enable)
 #if defined(CONFIG_BT_CTLR_ADV_EXT)
 	} else if (pdu_adv->type == PDU_ADV_TYPE_EXT_IND) {
 		struct pdu_adv_com_ext_adv *p;
-		struct ext_adv_hdr *h;
+		struct pdu_adv_hdr *h;
 		u8_t *ptr;
 
 		p = (void *)&pdu_adv->adv_ext_ind;
@@ -542,7 +542,7 @@ u8_t ll_adv_enable(u8_t enable)
 		} else if (h->aux_ptr) {
 			struct pdu_adv_com_ext_adv *s;
 			struct pdu_adv *pdu_aux;
-			struct ext_adv_hdr *hs;
+			struct pdu_adv_hdr *hs;
 			u8_t *ps;
 
 			pdu_aux = lll_adv_aux_data_peek(lll->aux);
