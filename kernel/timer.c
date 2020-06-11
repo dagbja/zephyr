@@ -80,6 +80,7 @@ void z_timer_expiration_handler(struct _timeout *t)
 	 * thread level, which of course cannot interrupt the current
 	 * context.
 	 */
+
 	z_unpend_thread_no_timeout(thread);
 
 	z_ready_thread(thread);
@@ -168,7 +169,7 @@ void z_impl_k_timer_stop(struct k_timer *timer)
 	if (timer->stop_fn != NULL) {
 		timer->stop_fn(timer);
 	}
-
+	
 	struct k_thread *pending_thread = z_unpend1_no_timeout(&timer->wait_q);
 
 	if (pending_thread != NULL) {

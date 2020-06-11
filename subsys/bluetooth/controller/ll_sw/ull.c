@@ -222,16 +222,36 @@ static MFIFO_DEFINE(pdu_rx_free, sizeof(void *), PDU_RX_CNT);
 #define BT_CTLR_MAX_CONN        0
 #endif
 
+#if defined(CONFIG_BT_CTLR_ADV_SET)
+#define BT_CTLR_ADV_SET CONFIG_BT_CTLR_ADV_SET
+#else
+#define BT_CTLR_ADV_SET 1
+#endif
+
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+#define PDU_RX_POOL_SIZE (PDU_RX_NODE_POOL_ELEMENT_SIZE * \
+			  (RX_CNT + BT_CTLR_MAX_CONNECTABLE + \
+			   BT_CTLR_ADV_SET))
+#else
 #define PDU_RX_POOL_SIZE (PDU_RX_NODE_POOL_ELEMENT_SIZE * \
 			  (RX_CNT + BT_CTLR_MAX_CONNECTABLE))
+#endif
 
 static struct {
 	void *free;
 	u8_t pool[PDU_RX_POOL_SIZE];
 } mem_pdu_rx;
 
+
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+#define LINK_RX_POOL_SIZE (sizeof(memq_link_t) * (RX_CNT + 2 + \
+						  BT_CTLR_MAX_CONN + \
+						  CONFIG_BT_CTLR_ADV_SET))
+#else
 #define LINK_RX_POOL_SIZE (sizeof(memq_link_t) * (RX_CNT + 2 + \
 						  BT_CTLR_MAX_CONN))
+#endif
+
 static struct {
 	u8_t quota_pdu; /* Number of un-utilized buffers */
 
@@ -665,6 +685,10 @@ void ll_rx_dequeue(void)
 	case NODE_RX_TYPE_REPORT:
 #endif /* CONFIG_BT_OBSERVER */
 
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+	case NODE_RX_TYPE_EXT_ADV_TERMINATE:
+#endif  /* CONFIG_BT_CTLR_ADV_EXT */
+
 #if defined(CONFIG_BT_CTLR_SCAN_REQ_NOTIFY)
 	case NODE_RX_TYPE_SCAN_REQ:
 #endif /* CONFIG_BT_CTLR_SCAN_REQ_NOTIFY */
@@ -824,6 +848,7 @@ void ll_rx_mem_release(void **node_rx)
 		case NODE_RX_TYPE_EXT_1M_REPORT:
 		case NODE_RX_TYPE_EXT_2M_REPORT:
 		case NODE_RX_TYPE_EXT_CODED_REPORT:
+		case NODE_RX_TYPE_EXT_ADV_TERMINATE:
 #endif /* CONFIG_BT_CTLR_ADV_EXT */
 
 #if defined(CONFIG_BT_CTLR_SCAN_REQ_NOTIFY)
@@ -1196,6 +1221,29 @@ void *ull_event_done(void *param)
 {
 	struct node_rx_event_done *evdone;
 	memq_link_t *link;
+#if defined(CONFIG_BT_CTLR_ADV_EXT)	
+	struct ull_hdr *ull;	
+	struct lll_adv *lll;
+	struct evt_hdr *evt;
+	struct ll_adv_set *lll_adv;
+#endif /* CONFIG_BT_CTLR_ADV_EXT */
+
+
+#if defined(CONFIG_BT_CTLR_ADV_EXT)	
+	ull = (struct ull_hdr *)param;	
+	lll = (struct lll_adv *)HDR_ULL2LLL(ull);
+	evt = (struct evt_hdr *)HDR_LLL2EVT(lll);
+	lll_adv = (struct ll_adv_set *)evt;
+
+	if (ull->remain_duration) {
+		if (lll_adv->interval < ull->remain_duration) {
+			ull->remain_duration -= lll_adv->interval;
+		}
+		else {
+			ull->remain_duration = 1;
+		}
+	}
+#endif /* CONFIG_BT_CTLR_ADV_EXT */
 
 	/* Obtain new node that signals "Done of an RX-event".
 	 * Obtain this by dequeuing from the global 'mfifo_done' queue.
@@ -1722,6 +1770,35 @@ static inline int rx_demux_rx(memq_link_t *link, struct node_rx_hdr *rx)
 	return 0;
 }
 
+#if 1
+static void term_evt_disable(struct ull_hdr *ull_hdr)
+{
+	static memq_link_t link;
+	static struct mayfly mfy = {0, 0, &link, NULL, NULL};
+	struct lll_adv* lll;
+	u32_t ret;
+
+	lll = (struct lll_adv *)HDR_ULL2LLL(ull_hdr);
+	mfy.param = lll;
+
+	if (ull_hdr->ref) {
+		LL_ASSERT(!ull_hdr->disabled_cb);
+		ull_hdr->disabled_param = mfy.param;
+		ull_hdr->disabled_cb = disabled_cb;
+
+		mfy.fp = lll_disable;
+		ret = mayfly_enqueue(TICKER_USER_ID_ULL_LOW,
+				     TICKER_USER_ID_LLL, 0, &mfy);
+		LL_ASSERT(!ret);
+	} else {
+		mfy.fp = disabled_cb;
+		ret = mayfly_enqueue(TICKER_USER_ID_ULL_LOW,
+				     TICKER_USER_ID_ULL_HIGH, 0, &mfy);
+		LL_ASSERT(!ret);
+	}
+}
+#endif
+
 static inline void rx_demux_event_done(memq_link_t *link,
 				       struct node_rx_hdr *rx)
 {
@@ -1729,6 +1806,10 @@ static inline void rx_demux_event_done(memq_link_t *link,
 	struct ull_hdr *ull_hdr;
 	struct lll_event *next;
 	void *release;
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+	struct lll_adv *lll;
+	bool   send_term_evt = false;
+#endif /* CONFIG_BT_CTLR_ADV_EXT */
 
 	/* Get the ull instance */
 	ull_hdr = done->param;
@@ -1740,6 +1821,47 @@ static inline void rx_demux_event_done(memq_link_t *link,
 		ull_conn_done(done);
 		break;
 #endif /* CONFIG_BT_CONN */
+
+#if defined(CONFIG_BT_CTLR_ADV_EXT) && defined(CONFIG_BT_BROADCASTER)
+	case EVENT_DONE_EXTRA_TYPE_ADV:
+		lll = (struct lll_adv *)HDR_ULL2LLL(ull_hdr);
+
+		if ((ull_hdr->max_events > 0) && 
+			(ull_hdr->event_counter >= ull_hdr->max_events)) {
+
+			send_term_evt = true;
+
+			lll->node_rx_adv_term->rx_ftr.extra =(void *)
+				((u32_t)ull_hdr->event_counter);
+
+			ull_hdr->max_events = 0;
+		}
+
+		if (ull_hdr->remain_duration == 1) {
+			send_term_evt = true;
+
+			lll->node_rx_adv_term->rx_ftr.extra =(void *)
+				((u32_t)ull_hdr->event_counter 
+				| BIT(TERM_EVT_TIMEOUT));
+			
+			ull_hdr->remain_duration = 0;
+		}
+		if (send_term_evt) {
+			lll->node_rx_adv_term->type =
+				NODE_RX_TYPE_EXT_ADV_TERMINATE;
+			lll->node_rx_adv_term->rx_ftr.param =(void *)
+				(u32_t)(lll->node_rx_adv_term->handle);
+
+			rx = lll->node_rx_adv_term;
+			link = rx->link;
+
+			ll_rx_put(link, rx);
+			ll_rx_sched();
+
+			term_evt_disable(ull_hdr);
+		}
+	break;
+#endif /* CONFIG_BT_CTLR_ADV_EXT && CONFIG_BT_BROADCASTER */
 
 #if defined(CONFIG_BT_OBSERVER)
 #if defined(CONFIG_BT_CTLR_ADV_EXT)

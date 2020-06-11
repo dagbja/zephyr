@@ -227,7 +227,7 @@ void lll_disable(void *param)
 	{
 		struct lll_event *next;
 		u8_t idx = UINT8_MAX;
-
+		
 		next = ull_prepare_dequeue_iter(&idx);
 		while (next) {
 			if (!next->is_aborted &&
@@ -236,7 +236,6 @@ void lll_disable(void *param)
 				next->abort_cb(&next->prepare_param,
 					       next->prepare_param.param);
 			}
-
 			next = ull_prepare_dequeue_iter(&idx);
 		}
 	}

@@ -470,8 +470,6 @@ static inline void z_vrfy_k_thread_resume(struct k_thread *thread)
 
 static _wait_q_t *pended_on(struct k_thread *thread)
 {
-	__ASSERT_NO_MSG(thread->base.pended_on);
-
 	return thread->base.pended_on;
 }
 
@@ -543,6 +541,7 @@ void z_thread_single_abort(struct k_thread *thread)
 		while ((waiter = z_waitq_head(&thread->base.join_waiters)) !=
 		       NULL) {
 			(void)z_abort_thread_timeout(waiter);
+			
 			_priq_wait_remove(&pended_on(waiter)->waitq, waiter);
 			z_mark_thread_as_not_pending(waiter);
 			waiter->base.pended_on = NULL;

@@ -19,6 +19,7 @@ struct ll_adv_set {
 	u8_t  rnd_addr[BDADDR_SIZE];
 	u8_t  sid:4;
 	u8_t  is_created:2;
+	// move vars here
 #else /* !CONFIG_BT_CTLR_ADV_EXT */
 	u16_t interval;
 #endif /* !CONFIG_BT_CTLR_ADV_EXT */
