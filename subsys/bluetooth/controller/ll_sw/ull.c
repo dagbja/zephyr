@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <errno.h>
 
+/// tull
 #include <zephyr/types.h>
 #include <device.h>
 #include <drivers/entropy.h>
