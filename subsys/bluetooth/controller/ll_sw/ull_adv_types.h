@@ -19,6 +19,9 @@ struct ll_adv_set {
 	u8_t  rnd_addr[BDADDR_SIZE];
 	u8_t  sid:4;
 	u8_t  is_created:2;
+	u16_t max_events;
+	u16_t event_counter;
+	u32_t remain_duration;
 #else /* !CONFIG_BT_CTLR_ADV_EXT */
 	u16_t interval;
 #endif /* !CONFIG_BT_CTLR_ADV_EXT */
