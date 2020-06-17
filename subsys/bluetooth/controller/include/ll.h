@@ -36,7 +36,8 @@ u8_t ll_adv_enable(u16_t handle, u8_t enable,
 		   u8_t at_anchor, u32_t ticks_anchor, u8_t retry,
 		   u8_t scan_window, u8_t scan_delay);
 #else /* !CONFIG_BT_HCI_MESH_EXT */
-u8_t ll_adv_enable(u16_t handle, u8_t enable);
+u8_t ll_adv_enable(u8_t handle, u8_t enable,
+		   u16_t duration, u8_t max_ext_adv_evts);
 #endif /* !CONFIG_BT_HCI_MESH_EXT */
 #else /* !CONFIG_BT_CTLR_ADV_EXT || !CONFIG_BT_HCI_MESH_EXT */
 u8_t ll_adv_enable(u8_t enable);

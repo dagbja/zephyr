@@ -462,6 +462,9 @@ static void isr_done(void *param)
 {
 	struct node_rx_hdr *node_rx;
 	struct lll_adv *lll = param;
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+	struct event_done_extra *e;
+#endif  /* CONFIG_BT_CTLR_ADV_EXT */
 
 	/* TODO: MOVE to a common interface, isr_lll_radio_status? */
 	/* Clear radio status and events */
@@ -566,6 +569,12 @@ static void isr_abort(void *param)
 	}
 
 	radio_filter_disable();
+
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+	e = ull_event_done_extra_get();
+	LL_ASSERT(e);
+	e->type = EVENT_DONE_EXTRA_TYPE_ADV;
+#endif  /* CONFIG_BT_CTLR_ADV_EXT */
 
 	isr_cleanup(param);
 }

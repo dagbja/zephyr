@@ -213,6 +213,26 @@ void ull_slave_setup(memq_link_t *link, struct node_rx_hdr *rx,
 		}
 	}
 
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+	if (adv->is_created & BIT(1)) {
+		struct ull_hdr *ull;
+
+		ull = &adv->ull;
+
+		ll_rx_put(link, rx);
+
+		/* use reserved link and node_rx to prepare
+			advertising terminate event */
+		rx = adv->lll.node_rx_adv_term;
+		link = rx->link;
+		rx->handle = ull_adv_handle_get(adv);
+		rx->type = NODE_RX_TYPE_EXT_ADV_TERMINATE;
+		rx->rx_ftr.param = (void *)((u32_t)lll->handle);
+		rx->rx_ftr.extra = (void *)((u32_t)(adv->max_events -
+			adv->event_counter)
+			| BIT(TERM_EVT_CONNECT));
+	}
+#endif
 	ll_rx_put(link, rx);
 	ll_rx_sched();
 

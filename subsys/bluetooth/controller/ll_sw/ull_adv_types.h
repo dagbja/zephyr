@@ -18,6 +18,9 @@ struct ll_adv_set {
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT)
 	u32_t interval;
+	u16_t max_events;
+	u16_t event_counter;
+	u32_t remain_duration;
 #else /* !CONFIG_BT_CTLR_ADV_EXT */
 	u16_t interval;
 #endif /* !CONFIG_BT_CTLR_ADV_EXT */
