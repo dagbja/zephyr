@@ -3578,7 +3578,18 @@ static void le_adv_ext_terminate(struct pdu_data *pdu_data,
 	}
 
 	sep = meta_evt(buf, BT_HCI_EVT_LE_ADV_SET_TERMINATED, sizeof(*sep));
-	sep->status = ((uint32_t)node_rx->hdr.rx_ftr.extra >> 8) & 0xff;
+
+	/* Bit 17 set indicates event was caused by connection */
+	/* Bit 16 set indicates event was caused by duration timeout */
+	if ((uint32_t)node_rx->hdr.rx_ftr.extra & BIT(TERM_EVT_CONNECT)) {
+		sep->status = BT_HCI_ERR_SUCCESS;
+	} else if ((uint32_t)node_rx->hdr.rx_ftr.extra
+		& BIT(TERM_EVT_TIMEOUT)) {
+		sep->status = BT_HCI_ERR_ADV_TIMEOUT;
+	} else {
+		sep->status = BT_HCI_ERR_SUCCESS;
+	}
+
 	sep->adv_handle = (node_rx->hdr.handle & 0xff);
 	sep->conn_handle =
 		sys_cpu_to_le16(*(uint16_t *)node_rx->hdr.rx_ftr.param);

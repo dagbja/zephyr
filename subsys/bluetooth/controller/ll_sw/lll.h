@@ -39,6 +39,11 @@
 #endif /* !CONFIG_BT_CTLR_ADV_EXT */
 #endif /* CONFIG_BT_OBSERVER */
 
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+#define TERM_EVT_TIMEOUT (16)	/* Term event caused by duration timeout */
+#define TERM_EVT_CONNECT (17)	/* Term event caused by connection */
+#endif /* CONFIG_BT_CTLR_ADV_EXT */
+
 enum {
 	TICKER_ID_LLL_PREEMPT = 0,
 

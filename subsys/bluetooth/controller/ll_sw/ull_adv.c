@@ -55,13 +55,13 @@ inline uint16_t ull_adv_handle_get(struct ll_adv_set *adv);
 
 static int init_reset(void);
 static inline struct ll_adv_set *is_disabled_get(uint8_t handle);
-static void ticker_cb(uint32_t ticks_at_expire, uint32_t remainder,
-	uint16_t lazy, void *param);
+static void ticker_cb(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy,
+		      void *param);
 static void ticker_op_update_cb(uint32_t status, void *params);
 
 #if defined(CONFIG_BT_PERIPHERAL)
-static void ticker_stop_cb(uint32_t ticks_at_expire, uint32_t remainder,
-	uint16_t lazy, void *param);
+static void ticker_stop_cb(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy,
+			   void *param);
 static void ticker_op_stop_cb(uint32_t status, void *params);
 static void disabled_cb(void *param);
 static void conn_release(struct ll_adv_set *adv);
@@ -858,8 +858,7 @@ uint8_t ll_adv_enable(uint8_t enable)
 	ull = &adv->ull;
 	adv->max_events = max_ext_adv_evts;
 	adv->event_counter = 0;
-	/* duration unit is 10 ms, convert to units of 625 us */
-	adv->remain_duration = duration*16;
+	adv->remain_duration = HAL_TICKER_US_TO_TICKS(duration*10000);
 #else
 	/* Legacy ADV only supports LE_1M PHY */
 	const uint8_t phy = 1;
@@ -1140,7 +1139,9 @@ uint8_t ll_adv_enable(uint8_t enable)
 #endif /* !CONFIG_BT_HCI_MESH_EXT */
 #endif /* CONFIG_BT_CTLR_PRIVACY */
 
-	adv->next_random_delay = 0;
+	lll_rand_isr_get(&adv->next_random_delay, sizeof(adv->next_random_delay));
+	adv->next_random_delay %= ULL_ADV_RANDOM_DELAY;
+	adv->next_random_delay += 1;
 
 	return 0;
 
@@ -1398,8 +1399,8 @@ static void ticker_cb(uint32_t ticks_at_expire, uint32_t remainder, uint16_t laz
 	uint8_t ref;
 #if defined(CONFIG_BT_CTLR_ADV_EXT)
 	struct ull_hdr *ull;
-	uint32_t time_this_evt;
-	uint32_t time_this_and_next_evt;
+	uint32_t ticks_next_evt_done;
+	uint32_t interval;
 #endif /* CONFIG_BT_CTLR_ADV_EXT */
 	uint32_t curr_random_delay = 0;
 
@@ -1434,16 +1435,8 @@ static void ticker_cb(uint32_t ticks_at_expire, uint32_t remainder, uint16_t laz
 		uint32_t ret;
 
 		curr_random_delay = adv->next_random_delay;
-		/* initialized to 0, so the first time, we generate a value */
-		if (curr_random_delay == 0) {
-			lll_rand_isr_get(&curr_random_delay, 
-				sizeof(curr_random_delay));
-			curr_random_delay %= ULL_ADV_RANDOM_DELAY;
-			curr_random_delay += 1;
-		}
 
-		lll_rand_isr_get(&adv->next_random_delay, 
-			sizeof(adv->next_random_delay));
+		lll_rand_isr_get(&adv->next_random_delay, sizeof(adv->next_random_delay));
 		adv->next_random_delay %= ULL_ADV_RANDOM_DELAY;
 		adv->next_random_delay += 1;
 
@@ -1463,18 +1456,17 @@ static void ticker_cb(uint32_t ticks_at_expire, uint32_t remainder, uint16_t laz
 
 	adv->event_counter += (lazy + 1);
 
-	time_this_evt =
-		(HAL_TICKER_TICKS_TO_US(curr_random_delay) / 625U)
-		+ adv->interval;
-	time_this_and_next_evt =
-		(HAL_TICKER_TICKS_TO_US(curr_random_delay + adv->next_random_delay) / 625U)
-		+ 2*adv->interval;
+	interval = HAL_TICKER_US_TO_TICKS
+		((uint64_t)adv->interval * 625U);
+
+	ticks_next_evt_done = 2*interval
+		+ curr_random_delay + adv->next_random_delay;
 
 	if (adv->remain_duration) {
-		if (adv->remain_duration >= time_this_and_next_evt) {
-			adv->remain_duration -= time_this_evt;
+		if (adv->remain_duration >= ticks_next_evt_done) {
+			adv->remain_duration -= ticks_next_evt_done;
 		} else {
-			/* 1 means terminate adv set after this event*/
+			/* A value of 1 means send term event */
 			adv->remain_duration = 1;
 		}
 	}
@@ -1496,8 +1488,8 @@ static void ticker_op_update_cb(uint32_t status, void *param)
 }
 
 #if defined(CONFIG_BT_PERIPHERAL)
-static void ticker_stop_cb(uint32_t ticks_at_expire, uint32_t remainder,
-	uint16_t lazy, void *param)
+static void ticker_stop_cb(uint32_t ticks_at_expire, uint32_t remainder, uint16_t lazy,
+			   void *param)
 {
 	struct ll_adv_set *adv = param;
 	uint8_t handle;

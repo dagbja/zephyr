@@ -281,6 +281,7 @@ static inline void ll_rx_link_inc_quota(int8_t delta);
 static void disabled_cb(void *param);
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT) && defined(CONFIG_BT_BROADCASTER)
+static void term_evt_op_stop_cb(uint32_t status, void *param);
 static void term_evt_disable(struct ull_hdr *ull_hdr);
 #endif /* CONFIG_BT_CTLR_ADV_EXT && CONFIG_BT_BROADCASTER */
 
@@ -1747,6 +1748,36 @@ static inline int rx_demux_rx(memq_link_t *link, struct node_rx_hdr *rx)
 }
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT) && defined(CONFIG_BT_BROADCASTER)
+static void term_evt_op_stop_cb(uint32_t status, void *param)
+{
+	static memq_link_t link;
+	static struct mayfly mfy = {0, 0, &link, NULL, NULL};
+	struct ll_adv_set *adv;
+	struct ull_hdr *hdr;
+	uint32_t ret;
+
+	/* Ignore if race between thread and ULL */
+	if (status != TICKER_STATUS_SUCCESS) {
+		/* TODO: detect race */
+
+		return;
+	}
+	adv = param;
+	hdr = &adv->ull;
+	mfy.param = &adv->lll;
+
+	if (hdr->ref) {
+		LL_ASSERT(!hdr->disabled_cb);
+		hdr->disabled_param = NULL;
+		hdr->disabled_cb = NULL;
+
+		mfy.fp = lll_disable;
+		ret = mayfly_enqueue(TICKER_USER_ID_ULL_LOW,
+				     TICKER_USER_ID_LLL, 0, &mfy);
+		LL_ASSERT(!ret);
+	}
+}
+
 static void term_evt_disable(struct ull_hdr *ull_hdr)
 {
 	struct lll_adv *lll;
@@ -1761,10 +1792,10 @@ static void term_evt_disable(struct ull_hdr *ull_hdr)
 	LL_ASSERT(handle < BT_CTLR_ADV_SET);
 
 	ret = ticker_stop(TICKER_INSTANCE_ID_CTLR, TICKER_USER_ID_ULL_HIGH,
-			  TICKER_ID_ADV_BASE + handle, NULL, adv);
-
-	LL_ASSERT((ret == TICKER_STATUS_SUCCESS)
-		|| (ret == TICKER_STATUS_BUSY));
+			  TICKER_ID_ADV_BASE + handle,
+			  term_evt_op_stop_cb, adv);
+	LL_ASSERT((ret == TICKER_STATUS_SUCCESS) ||
+		  (ret == TICKER_STATUS_BUSY));
 }
 #endif /* CONFIG_BT_CTLR_ADV_EXT && CONFIG_BT_BROADCASTER */
 
@@ -1775,6 +1806,11 @@ static inline void rx_demux_event_done(memq_link_t *link,
 	struct ull_hdr *ull_hdr;
 	struct lll_event *next;
 	void *release;
+#if defined(CONFIG_BT_CTLR_ADV_EXT)
+	struct lll_adv *lll;
+	struct ll_adv_set *adv;
+	bool   send_term_evt = false;
+#endif /* CONFIG_BT_CTLR_ADV_EXT */
 
 	/* Get the ull instance */
 	ull_hdr = done->param;
@@ -1789,31 +1825,28 @@ static inline void rx_demux_event_done(memq_link_t *link,
 
 #if defined(CONFIG_BT_CTLR_ADV_EXT) && defined(CONFIG_BT_BROADCASTER)
 	case EVENT_DONE_EXTRA_TYPE_ADV:
-	{
-		struct lll_adv *lll;
-		struct ll_adv_set *adv;
-		bool   send_term_evt = false;
-
 		lll = (struct lll_adv *)HDR_ULL2LLL(ull_hdr);
 		adv = (void *)HDR_LLL2EVT(lll);
-
-		lll->node_rx_adv_term->rx_ftr.extra = (void *)
-			((uint32_t)adv->event_counter & 0xff);
 
 		if ((adv->max_events > 0) &&
 			(adv->event_counter >= adv->max_events)) {
 
-			adv->max_events = 0;
 			send_term_evt = true;
+
+			lll->node_rx_adv_term->rx_ftr.extra = (void *)
+				((uint32_t)adv->event_counter);
+
+			adv->max_events = 0;
 		}
 
 		if (adv->remain_duration == 1) {
 			adv->remain_duration = 0;
+
 			send_term_evt = true;
 
 			lll->node_rx_adv_term->rx_ftr.extra = (void *)
-				((uint32_t)lll->node_rx_adv_term->rx_ftr.extra
-				| (BT_HCI_ERR_ADV_TIMEOUT << 8));
+				((uint32_t)adv->event_counter
+					| BIT(TERM_EVT_TIMEOUT));
 		}
 
 		if (send_term_evt) {
@@ -1830,8 +1863,7 @@ static inline void rx_demux_event_done(memq_link_t *link,
 
 			term_evt_disable(ull_hdr);
 		}
-		break;
-	}
+	break;
 #endif /* CONFIG_BT_CTLR_ADV_EXT && CONFIG_BT_BROADCASTER */
 
 #if defined(CONFIG_BT_OBSERVER)
