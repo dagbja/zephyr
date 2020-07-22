@@ -283,16 +283,6 @@ static void test_advx_main(void)
 
 	k_sleep(K_MSEC(400));
 
-	printk("Update advertising data 1...");
-	err = ll_adv_aux_ad_data_set(handle, AD_OP, AD_FRAG_PREF,
-				     sizeof(adv_data1), (void *)adv_data1);
-	if (err) {
-		goto exit;
-	}
-	printk("success.\n");
-
-	k_sleep(K_MSEC(400));
-
 	printk("Enabling adv set...");
 	err = ll_adv_enable(handle, 1);
 	if (err) {
@@ -523,3 +513,4 @@ void main(void)
 {
 	bst_main();
 }
+
