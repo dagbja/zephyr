@@ -495,6 +495,8 @@ uint8_t ll_adv_sync_enable(uint8_t handle, uint8_t enable)
 			return err;
 		}
 
+		sync->is_enabled = 0U;
+
 		return 0;
 	}
 

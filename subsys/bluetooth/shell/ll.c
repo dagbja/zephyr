@@ -275,6 +275,10 @@ disable:
 	err = ll_adv_enable(handle, enable, 0, 0, 0, 0, 0);
 #else /* !CONFIG_BT_HCI_MESH_EXT */
 	err = ll_adv_enable(handle, enable);
+
+	if (!enable) {
+		err = ll_adv_aux_set_remove(handle);
+	}
 #endif /* !CONFIG_BT_HCI_MESH_EXT */
 	if (err) {
 		goto exit;
