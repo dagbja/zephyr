@@ -461,16 +461,16 @@ static void test_advx_main(void)
 	}
 	printk("success.\n");
 
-	printk("Update advertising data 1...");
+	printk("Update advertising data 2...");
 	err = ll_adv_aux_ad_data_set(handle, AD_OP, AD_FRAG_PREF,
-				     sizeof(adv_data1), (void *)adv_data1);
+				     sizeof(adv_data2), (void *)adv_data2);
 	if (err) {
 		goto exit;
 	}
 	printk("success.\n");
 
 	printk("Enabling adv set...");
-	err = ll_adv_enable(handle, 1);
+	err = ll_adv_enable(handle, 1, 0, 0);
 	if (err) {
 		goto exit;
 	}
@@ -486,7 +486,7 @@ static void test_advx_main(void)
 	printk("success.\n");
 
 	printk("Disabling adv set...");
-	err = ll_adv_enable(handle, 0);
+	err = ll_adv_enable(handle, 0, 0, 0);
 	if (err) {
 		goto exit;
 	}
@@ -496,6 +496,37 @@ static void test_advx_main(void)
 	err = ll_adv_aux_set_remove(handle);
 	if (err) {
 		goto exit;
+	}
+	printk("success.\n");
+
+	uint8_t num_adv_sets;
+	num_adv_sets = ll_adv_aux_set_count_get();
+
+	printk("Creating %d adv sets ...", num_adv_sets);
+	for (handle = 0; handle < num_adv_sets; ++handle) {
+		err = ll_adv_params_set(handle, evt_prop, ADV_INTERVAL,
+			adv_type, OWN_ADDR_TYPE, PEER_ADDR_TYPE, PEER_ADDR,
+			ADV_CHAN_MAP, FILTER_POLICY, ADV_TX_PWR, phy_p,
+			ADV_SEC_SKIP, phy_s, ADV_SID, SCAN_REQ_NOT);
+		if (err) {
+			goto exit;
+		}
+	}
+	printk("success.\n");
+
+	printk("Clearing all adv sets...");
+	err = ll_adv_aux_set_clear();
+	if (err) {
+		goto exit;
+	}
+	printk("success.\n");
+
+	printk("Trying to remove adv sets ...");
+	for (handle = 0; handle < num_adv_sets; ++handle) {
+		err = ll_adv_aux_set_remove(handle);
+		if (err != BT_HCI_ERR_UNKNOWN_ADV_IDENTIFIER) {
+			goto exit;
+		}
 	}
 	printk("success.\n");
 
