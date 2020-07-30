@@ -51,6 +51,12 @@ static struct ll_adv_aux_set ll_adv_aux_pool[CONFIG_BT_CTLR_ADV_AUX_SET];
 static void *adv_aux_free;
 #endif /* (CONFIG_BT_CTLR_ADV_AUX_SET > 0) */
 
+#if defined(CONFIG_BT_CTLR_ADV_SET)
+#define BT_CTLR_ADV_SET CONFIG_BT_CTLR_ADV_SET
+#else
+#define BT_CTLR_ADV_SET 1
+#endif
+
 uint8_t ll_adv_aux_random_addr_set(uint8_t handle, uint8_t const *const addr)
 {
 	struct ll_adv_set *adv;
@@ -595,10 +601,49 @@ uint8_t ll_adv_aux_set_remove(uint8_t handle)
 
 uint8_t ll_adv_aux_set_clear(void)
 {
-	/* TODO: reset/release all adv set primary channel and  Aux channel
-	 * PDUs
-	 */
-	return 0;
+	struct ll_adv_set *adv;
+	struct lll_adv *lll;
+	uint8_t handle;
+
+	for (handle = 0; handle < BT_CTLR_ADV_SET; ++handle) {
+		/* Get the advertising set instance */
+		adv = ull_adv_is_created_get(handle);
+
+		if (!adv) {
+			continue;
+		}
+
+		if (adv->is_enabled) {
+			return BT_HCI_ERR_CMD_DISALLOWED;
+		}
+
+		lll = &adv->lll;
+
+#if defined(CONFIG_BT_CTLR_ADV_PERIODIC)
+		if (lll->sync) {
+			struct ll_adv_sync_set *sync;
+
+			sync = (void *)HDR_LLL2EVT(lll->sync);
+
+			if (sync->is_enabled) {
+				return BT_HCI_ERR_CMD_DISALLOWED;
+			}
+		}
+#endif /* CONFIG_BT_CTLR_ADV_PERIODIC */
+
+		/* Release auxiliary channel set */
+		if (lll->aux) {
+			struct ll_adv_aux_set *aux;
+
+			aux = (void *)HDR_LLL2EVT(lll->aux);
+
+			ull_adv_aux_release(aux);
+		}
+
+		adv->is_created = 0;
+	}
+
+	return BT_HCI_ERR_SUCCESS;
 }
 
 int ull_adv_aux_init(void)
